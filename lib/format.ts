@@ -19,6 +19,19 @@ export function egpShort(value: number | string | null | undefined): string {
   return Math.abs(n) >= 10_000 ? compact.format(n) : money.format(n);
 }
 
+/** الدولار النقدي المكافئ لرصيد مسجَّل بالجنيه، على سعر الصرف المحفوظ */
+export function toUsd(
+  value: number | string | null | undefined,
+  rate: number | string | null | undefined
+): number {
+  const r = Number(rate ?? 0);
+  return r > 0 ? Number(value ?? 0) / r : 0;
+}
+
+export function usd(value: number | string | null | undefined): string {
+  return `$${money.format(Number(value ?? 0))}`;
+}
+
 export function num(value: number | string | null | undefined): string {
   return plain.format(Number(value ?? 0));
 }

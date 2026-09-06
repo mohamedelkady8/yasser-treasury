@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CUSTODY_STATE_LABELS, egp, fmtDate, num } from "@/lib/format";
+import { CUSTODY_STATE_LABELS, egp, fmtDate, num, toUsd, usd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type {
   BankBalance,
@@ -112,7 +112,11 @@ export default async function DashboardPage({
       <div className="rise-stagger space-y-6">
         <CashPositionCard cash={cash} usdRate={usdRate} />
 
-        <BankTiles banks={banks} total={Number(cash.bank_total ?? 0)} />
+        <BankTiles
+          banks={banks}
+          total={Number(cash.bank_total ?? 0)}
+          usdRate={usdRate}
+        />
 
         <div className="rise-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -367,8 +371,14 @@ function CashPositionCard({
             <Money value={available} currency={false} className="shrink-0" />
           </div>
           {Number(cash.usd_total ?? 0) !== 0 && (
-            <p className="pt-2 text-[11px] text-white/60">
-              منها خزينة الدولار <Money value={cash.usd_total} currency={false} /> ج.م
+            <p className="pt-2 text-[11px] text-white/70">
+              منها خزينة الدولار{" "}
+              {usdRate > 0 && (
+                <span className="num font-semibold text-white">
+                  {usd(toUsd(cash.usd_total, usdRate))} نقدًا
+                </span>
+              )}{" "}
+              = <Money value={cash.usd_total} currency={false} /> ج.م
               {usdRate > 0 && ` بسعر صرف ${usdRate}`}
             </p>
           )}
@@ -382,7 +392,15 @@ function CashPositionCard({
 const isTreasury = (name: string) => /^(خزينة|خزنة|خزنه)/.test(name.trim());
 
 /** مربع لكل بنك وخزينة: الرصيد أبرز رقم، وشريط يوضّح وزنه من الإجمالي */
-function BankTiles({ banks, total }: { banks: BankBalance[]; total: number }) {
+function BankTiles({
+  banks,
+  total,
+  usdRate,
+}: {
+  banks: BankBalance[];
+  total: number;
+  usdRate: number;
+}) {
   if (banks.length === 0) return null;
 
   const ordered = [...banks].sort(
@@ -421,19 +439,34 @@ function BankTiles({ banks, total }: { banks: BankBalance[]; total: number }) {
 
       <div className="rise-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
         {ordered.map((bank) => (
-          <BankTile key={bank.id} bank={bank} largest={largest} />
+          <BankTile
+            key={bank.id}
+            bank={bank}
+            largest={largest}
+            usdRate={usdRate}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function BankTile({ bank, largest }: { bank: BankBalance; largest: number }) {
+function BankTile({
+  bank,
+  largest,
+  usdRate,
+}: {
+  bank: BankBalance;
+  largest: number;
+  usdRate: number;
+}) {
   const balance = Number(bank.balance ?? 0);
   const movement = Number(bank.net_movement ?? 0);
   const treasury = isTreasury(bank.name);
   const Icon = treasury ? Wallet : Landmark;
   const idle = Math.abs(balance) < 0.005;
+  // خزينة الدولار: المال محفوظ نقدًا بالدولار والمسجَّل مقابله بالجنيه
+  const cashUsd = bank.is_usd && usdRate > 0 ? toUsd(balance, usdRate) : null;
 
   return (
     <Card
@@ -484,6 +517,16 @@ function BankTile({ bank, largest }: { bank: BankBalance; largest: number }) {
           className={cn(balance < 0 && "text-negative")}
         />
       </p>
+
+      {cashUsd !== null && (
+        <p
+          title={`محسوب على سعر صرف ${usdRate}`}
+          className="num mt-1 inline-flex w-fit items-center gap-1 rounded-md bg-chart-2/10 px-1.5 py-0.5 text-sm font-semibold text-chart-2"
+        >
+          {usd(cashUsd)}
+          <span className="text-[10px] font-normal opacity-70">نقدًا</span>
+        </p>
+      )}
 
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
         <span

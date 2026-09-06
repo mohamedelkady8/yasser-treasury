@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { BankBalance, Settings } from "@/lib/database.types";
-import { egp } from "@/lib/format";
+import { egp, toUsd, usd } from "@/lib/format";
 
 type Draft = {
   id: string | null;
@@ -164,6 +164,11 @@ export function BanksView({
                       sign
                       className="font-semibold"
                     />
+                    {b.is_usd && Number(rate) > 0 && (
+                      <span className="num block text-[11px] font-medium text-chart-2">
+                        {usd(toUsd(b.balance, rate))} نقدًا
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="num text-center text-xs text-muted-foreground">
                     {b.entry_count}
@@ -233,9 +238,12 @@ export function BanksView({
                 onChange={(e) => setRate(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                رصيد خزائن الدولار حاليًا {egp(usdBalance)} ج.م
-                {Number(rate) > 0 &&
-                  ` ≈ ${egp(usdBalance / Number(rate))} دولار`}
+                خزائن الدولار فيها{" "}
+                <span className="num font-semibold text-chart-2">
+                  {Number(rate) > 0 ? usd(toUsd(usdBalance, rate)) : "—"}
+                </span>{" "}
+                نقدًا = {egp(usdBalance)} ج.م. تعديل السعر هنا يغيّر الرقم
+                بالدولار في كل الصفحات.
               </p>
             </div>
             <Button onClick={submitSettings} disabled={busy}>

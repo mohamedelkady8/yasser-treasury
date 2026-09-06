@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     supabase.from("v_debt_balances").select("*").order("debt_date"),
     supabase.from("v_cash_position").select("*").single(),
     supabase.rpc("f_operational_totals", range),
-    supabase.from("settings").select("company_name").single(),
+    supabase.from("settings").select("company_name, usd_rate").single(),
     supabase.rpc("f_monthly_summary"),
     supabase.rpc("f_expense_by_cost_center", { ...range, p_limit: 500 }),
     supabase.rpc("f_expense_by_ledger", { ...range, p_limit: 500 }),
@@ -139,6 +139,7 @@ export async function GET(request: NextRequest) {
   const totals = ((totalsRes.data as OperationalTotals[] | null)?.[0] ??
     {}) as OperationalTotals;
   const company = settingsRes.data?.company_name ?? "الشركة";
+  const usdRate = Number(settingsRes.data?.usd_rate ?? 0);
   const monthly = (monthlyRes.data ?? []) as MonthlySummary[];
   const byCc = (byCcRes.data ?? []) as Breakdown[];
   const byLedger = (byLedgerRes.data ?? []) as Breakdown[];
@@ -290,6 +291,7 @@ export async function GET(request: NextRequest) {
     { header: "مرتجع العهد", key: "back", width: 16, style: { numFmt: MONEY } },
     { header: "صافي الحركة", key: "net", width: 18, style: { numFmt: MONEY } },
     { header: "الرصيد الحالي", key: "balance", width: 18, style: { numFmt: MONEY } },
+    { header: "نقدًا بالدولار", key: "usd", width: 16, style: { numFmt: MONEY } },
     { header: "عدد القيود", key: "count", width: 12 },
   ]);
   for (const b of banks)
@@ -301,6 +303,7 @@ export async function GET(request: NextRequest) {
       back: Number(b.custody_back),
       net: Number(b.net_movement),
       balance: Number(b.balance),
+      usd: b.is_usd && usdRate > 0 ? Number(b.balance) / usdRate : null,
       count: Number(b.entry_count),
     });
   bankSheet.addRow({
@@ -308,6 +311,10 @@ export async function GET(request: NextRequest) {
     opening: banks.reduce((s, b) => s + Number(b.opening_balance), 0),
     net: banks.reduce((s, b) => s + Number(b.net_movement), 0),
     balance: Number(cash.bank_total ?? 0),
+    usd:
+      usdRate > 0 && Number(cash.usd_total ?? 0) !== 0
+        ? Number(cash.usd_total) / usdRate
+        : null,
   });
   totalRow(bankSheet);
 

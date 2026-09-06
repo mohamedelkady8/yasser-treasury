@@ -18,7 +18,7 @@ import {
 import { ExportButtons } from "./export-buttons";
 import { ReportNav, type Section } from "./report-nav";
 import { Delta, KpiTile, ReportSection, ShareBar } from "./report-parts";
-import { egp, fmtDateLong, fmtMonth, num, pct } from "@/lib/format";
+import { egp, fmtDateLong, fmtMonth, num, pct, toUsd, usd } from "@/lib/format";
 import type {
   BankBalance,
   Breakdown,
@@ -298,7 +298,13 @@ export default async function ReportsPage({
           </Table>
           {Number(cash.usd_total ?? 0) !== 0 && (
             <p className="px-4 py-3 text-xs text-muted-foreground">
-              منها خزينة الدولار <Money value={cash.usd_total} currency={false} /> ج.م
+              منها خزينة الدولار{" "}
+              {usdRate > 0 && (
+                <span className="num font-semibold text-foreground">
+                  {usd(toUsd(cash.usd_total, usdRate))} نقدًا ={" "}
+                </span>
+              )}
+              <Money value={cash.usd_total} currency={false} /> ج.م
               {usdRate > 0 && ` محسوبة بسعر صرف ${usdRate}`}
             </p>
           )}
@@ -485,6 +491,11 @@ export default async function ReportsPage({
                       <Badge variant="secondary" className="ms-2 text-[10px]">
                         دولار
                       </Badge>
+                    )}
+                    {b.is_usd && usdRate > 0 && (
+                      <span className="num ms-2 text-[11px] text-muted-foreground">
+                        {usd(toUsd(b.balance, usdRate))} نقدًا
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="text-end">

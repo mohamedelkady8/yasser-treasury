@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -172,7 +173,12 @@ def test_debt_scenario(bank_id: str, account_id: str, ledger_id: str, cc_id: str
         },
     )
 
-    check_eq("رقم القيد تولّد تلقائيًا بصيغة الشهر", payment["entry_code"], "SEP26-0001")
+    # التسلسل يعتمد على قيود الشهر الفعلية، فنتحقق من الصيغة لا من الرقم
+    check_eq(
+        "رقم القيد تولّد تلقائيًا بصيغة الشهر",
+        bool(re.fullmatch(r"SEP26-\d{4}", payment["entry_code"])),
+        True,
+    )
     check_eq("الدفعة ورثت اسم الحساب من المديونية", payment["account_id"], account_id)
     check_eq("الدفعة ورثت الأستاذ العام", payment["ledger_id"], ledger_id)
     check_eq("الدفعة ورثت مركز التكلفة", payment["cost_center_id"], cc_id)
