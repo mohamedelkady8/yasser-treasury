@@ -122,14 +122,16 @@ export function BreakdownChart({
   );
 }
 
+/** سلّم فئوي من عائلة زرقاء واحدة، بلا تكرار حتى ثماني شرائح */
 const PIE_COLORS = [
   "var(--chart-1)",
   "var(--chart-2)",
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
-  "var(--primary)",
-  "var(--warning)",
+  "var(--chart-6)",
+  "var(--chart-7)",
+  "var(--chart-8)",
 ];
 
 const LEGEND_LABEL = (v: string) => (

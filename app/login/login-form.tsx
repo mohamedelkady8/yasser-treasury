@@ -45,7 +45,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="sheen rounded-3xl border-white/70 bg-card/80 shadow-glass-lg dark:border-white/15">
+    <Card className="sheen rounded-3xl border-border/70 bg-card/85 shadow-glass-lg">
       <CardContent className="pt-6">
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">

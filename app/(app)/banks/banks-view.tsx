@@ -165,7 +165,7 @@ export function BanksView({
                       className="font-semibold"
                     />
                     {b.is_usd && Number(rate) > 0 && (
-                      <span className="num block text-[11px] font-medium text-chart-2">
+                      <span className="num block text-[11px] font-medium text-primary">
                         {usd(toUsd(b.balance, rate))} نقدًا
                       </span>
                     )}
@@ -239,7 +239,7 @@ export function BanksView({
               />
               <p className="text-xs text-muted-foreground">
                 خزائن الدولار فيها{" "}
-                <span className="num font-semibold text-chart-2">
+                <span className="num font-semibold text-primary">
                   {Number(rate) > 0 ? usd(toUsd(usdBalance, rate)) : "—"}
                 </span>{" "}
                 نقدًا = {egp(usdBalance)} ج.م. تعديل السعر هنا يغيّر الرقم

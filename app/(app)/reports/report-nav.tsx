@@ -34,7 +34,7 @@ export function ReportNav({ sections }: { sections: Section[] }) {
   return (
     <nav
       aria-label="أقسام التقرير"
-      className="scroll-slim sticky top-0 z-20 -mx-4 flex gap-1.5 overflow-x-auto border-b border-white/60 bg-background/70 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6 dark:border-white/10 print:hidden"
+      className="scroll-slim sticky top-0 z-20 -mx-4 flex gap-1.5 overflow-x-auto border-b border-border bg-background/80 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6 print:hidden"
     >
       {sections.map((s, i) => (
         <a

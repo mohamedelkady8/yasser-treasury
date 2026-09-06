@@ -276,7 +276,7 @@ export function DebtsView({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-7 text-destructive hover:text-destructive"
+                              className="size-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               aria-label="حذف"
                               onClick={() => remove(debt)}
                             >

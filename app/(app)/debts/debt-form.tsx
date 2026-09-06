@@ -279,7 +279,7 @@ export function DebtForm({
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="size-8 justify-self-start text-destructive hover:text-destructive sm:justify-self-center"
+                        className="size-8 justify-self-start text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:justify-self-center"
                         aria-label="حذف البند"
                         disabled={itemFields.fields.length === 1}
                         onClick={() => itemFields.remove(index)}

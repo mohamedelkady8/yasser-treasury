@@ -521,7 +521,7 @@ function BankTile({
       {cashUsd !== null && (
         <p
           title={`محسوب على سعر صرف ${usdRate}`}
-          className="num mt-1 inline-flex w-fit items-center gap-1 rounded-md bg-chart-2/10 px-1.5 py-0.5 text-sm font-semibold text-chart-2"
+          className="num mt-1 inline-flex w-fit items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-sm font-semibold text-primary"
         >
           {usd(cashUsd)}
           <span className="text-[10px] font-normal opacity-70">نقدًا</span>
