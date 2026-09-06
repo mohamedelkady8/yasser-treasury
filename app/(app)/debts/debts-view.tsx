@@ -21,16 +21,21 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { DebtView, EntryView } from "@/lib/database.types";
+import type { DebtItem, DebtView, EntryView } from "@/lib/database.types";
 import type { Lookups } from "@/lib/lookups";
 import type { EntryInput } from "@/lib/schemas";
 import { DEBT_STATE_LABELS, fmtDate, pct, today } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DebtForm } from "./debt-form";
+
+/** الكميات قد تكون كسرية (أمتار/أطنان) فنعرض الكسر عند وجوده فقط */
+const qtyFmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 3 });
+const qty = (value: number | string) => qtyFmt.format(Number(value ?? 0));
 
 const STATE_TONE = {
   open: "bg-primary/10 text-primary",
@@ -41,11 +46,13 @@ const STATE_TONE = {
 
 export function DebtsView({
   debts,
+  items,
   payments,
   lookups,
   settledCount,
 }: {
   debts: DebtView[];
+  items: DebtItem[];
   payments: EntryView[];
   lookups: Lookups;
   settledCount: number;
@@ -61,6 +68,13 @@ export function DebtsView({
   const visible = showSettled
     ? debts
     : debts.filter((d) => d.state === "open" || d.state === "overdue");
+
+  const itemsByDebt = new Map<string, DebtItem[]>();
+  for (const item of items) {
+    const list = itemsByDebt.get(item.debt_id);
+    if (list) list.push(item);
+    else itemsByDebt.set(item.debt_id, [item]);
+  }
 
   function openPayment(debt: DebtView) {
     setPayment({
@@ -149,6 +163,7 @@ export function DebtsView({
               <TableBody>
                 {visible.map((debt) => {
                   const rows = payments.filter((p) => p.debt_id === debt.id);
+                  const debtItems = itemsByDebt.get(debt.id) ?? [];
                   const isOpen = expanded === debt.id;
                   return (
                     <Fragment key={debt.id}>
@@ -176,7 +191,7 @@ export function DebtsView({
                               </span>
                               <span className="block text-[11px] text-muted-foreground">
                                 {debt.cost_center_name ?? "بلا مركز تكلفة"} ·{" "}
-                                {debt.payment_count} دفعة
+                                {debtItems.length} بند · {debt.payment_count} دفعة
                               </span>
                             </span>
                           </button>
@@ -274,55 +289,138 @@ export function DebtsView({
                       {isOpen && (
                         <TableRow className="bg-muted/30">
                           <TableCell colSpan={8} className="p-0">
-                            <div className="p-4">
-                              <p className="mb-2 text-sm font-medium">
-                                دفعات هذه المديونية
-                              </p>
-                              {rows.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                  لم تُسجَّل أي دفعة بعد — كامل المبلغ ما زال
-                                  التزامًا لم يمسّ الخزنة
-                                </p>
-                              ) : (
-                                <div className="overflow-hidden rounded-lg border bg-background">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead className="w-28">رقم القيد</TableHead>
-                                        <TableHead className="w-24">التاريخ</TableHead>
-                                        <TableHead>البيان</TableHead>
-                                        <TableHead className="w-40">من</TableHead>
-                                        <TableHead className="w-32 text-end">
-                                          المبلغ
-                                        </TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {rows.map((p) => (
-                                        <TableRow key={p.id}>
-                                          <TableCell className="num text-xs text-muted-foreground">
-                                            {p.entry_code}
-                                          </TableCell>
-                                          <TableCell className="num text-xs">
-                                            {fmtDate(p.entry_date)}
-                                          </TableCell>
-                                          <TableCell className="text-sm">
-                                            {p.description}
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                            {p.bank_name ?? "—"}
+                            <div className="space-y-4 p-4">
+                              {debtItems.length > 0 && (
+                                <div>
+                                  <p className="mb-2 text-sm font-medium">
+                                    بنود المديونية
+                                  </p>
+                                  <div className="overflow-hidden rounded-lg border bg-background">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-10 text-center">
+                                            #
+                                          </TableHead>
+                                          <TableHead>البند</TableHead>
+                                          <TableHead className="w-20">الوحدة</TableHead>
+                                          <TableHead className="w-24 text-end">
+                                            الكمية
+                                          </TableHead>
+                                          <TableHead className="w-32 text-end">
+                                            سعر الوحدة
+                                          </TableHead>
+                                          <TableHead className="w-32 text-end">
+                                            الإجمالي
+                                          </TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {debtItems.map((item, i) => (
+                                          <TableRow key={item.id}>
+                                            <TableCell className="num text-center text-xs text-muted-foreground">
+                                              {i + 1}
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {item.name}
+                                            </TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">
+                                              {item.unit ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="num text-end text-sm">
+                                              {qty(item.quantity)}
+                                            </TableCell>
+                                            <TableCell className="text-end">
+                                              <Money
+                                                value={item.unit_price}
+                                                currency={false}
+                                              />
+                                            </TableCell>
+                                            <TableCell className="text-end">
+                                              <Money
+                                                value={item.line_total}
+                                                currency={false}
+                                                className="font-medium"
+                                              />
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                      <TableFooter>
+                                        <TableRow>
+                                          <TableCell colSpan={5} className="text-sm">
+                                            إجمالي البنود
                                           </TableCell>
                                           <TableCell className="text-end">
-                                            <Money value={p.amount} currency={false} />
+                                            <Money
+                                              value={debt.total_amount}
+                                              currency={false}
+                                              className="font-semibold"
+                                            />
                                           </TableCell>
                                         </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
+                                      </TableFooter>
+                                    </Table>
+                                  </div>
                                 </div>
                               )}
+
+                              <div>
+                                <p className="mb-2 text-sm font-medium">
+                                  دفعات هذه المديونية
+                                </p>
+                                {rows.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    لم تُسجَّل أي دفعة بعد — كامل المبلغ ما زال
+                                    التزامًا لم يمسّ الخزنة
+                                  </p>
+                                ) : (
+                                  <div className="overflow-hidden rounded-lg border bg-background">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead className="w-28">
+                                            رقم القيد
+                                          </TableHead>
+                                          <TableHead className="w-24">التاريخ</TableHead>
+                                          <TableHead>البيان</TableHead>
+                                          <TableHead className="w-40">من</TableHead>
+                                          <TableHead className="w-32 text-end">
+                                            المبلغ
+                                          </TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {rows.map((p) => (
+                                          <TableRow key={p.id}>
+                                            <TableCell className="num text-xs text-muted-foreground">
+                                              {p.entry_code}
+                                            </TableCell>
+                                            <TableCell className="num text-xs">
+                                              {fmtDate(p.entry_date)}
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                              {p.description}
+                                            </TableCell>
+                                            <TableCell className="text-xs">
+                                              {p.bank_name ?? "—"}
+                                            </TableCell>
+                                            <TableCell className="text-end">
+                                              <Money
+                                                value={p.amount}
+                                                currency={false}
+                                              />
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                )}
+                              </div>
+
                               {debt.note && (
-                                <p className="mt-3 text-xs text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   ملاحظات: {debt.note}
                                 </p>
                               )}
@@ -344,6 +442,7 @@ export function DebtsView({
         onOpenChange={(open) => setDebtForm((s) => ({ ...s, open }))}
         lookups={lookups}
         debt={debtForm.debt}
+        items={debtForm.debt ? itemsByDebt.get(debtForm.debt.id) : undefined}
       />
 
       <EntryForm

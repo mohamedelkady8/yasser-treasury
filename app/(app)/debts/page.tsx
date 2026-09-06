@@ -4,18 +4,28 @@ import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { BadgeDollarSign, CircleCheck, Clock, Wallet } from "lucide-react";
 import { DebtsView } from "./debts-view";
-import type { CashPosition, DebtView, EntryView } from "@/lib/database.types";
+import type {
+  CashPosition,
+  DebtItem,
+  DebtView,
+  EntryView,
+} from "@/lib/database.types";
 
 export const metadata = { title: "المديونيات" };
 
 export default async function DebtsPage() {
   const supabase = await createClient();
 
-  const [debtsRes, paymentsRes, cashRes, lookups] = await Promise.all([
+  const [debtsRes, itemsRes, paymentsRes, cashRes, lookups] = await Promise.all([
     supabase
       .from("v_debt_balances")
       .select("*")
       .order("debt_date", { ascending: false }),
+    supabase
+      .from("debt_items")
+      .select("*")
+      .order("debt_id")
+      .order("sort_order"),
     supabase
       .from("v_entries")
       .select("*")
@@ -26,6 +36,7 @@ export default async function DebtsPage() {
   ]);
 
   const debts = (debtsRes.data ?? []) as DebtView[];
+  const items = (itemsRes.data ?? []) as DebtItem[];
   const payments = (paymentsRes.data ?? []) as EntryView[];
   const cash = (cashRes.data ?? {}) as CashPosition;
 
@@ -78,6 +89,7 @@ export default async function DebtsPage() {
 
       <DebtsView
         debts={debts}
+        items={items}
         payments={payments}
         lookups={lookups}
         settledCount={settled.length}

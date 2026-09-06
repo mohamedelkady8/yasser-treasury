@@ -69,6 +69,9 @@ class Api:
     def drop(self, table: str, where: str):
         self.call("DELETE", f"/rest/v1/{table}?{where}")
 
+    def rpc(self, fn: str, args: dict):
+        return self.call("POST", f"/rest/v1/rpc/{fn}", args)
+
 
 api = Api()
 
@@ -100,17 +103,46 @@ def test_debt_scenario(bank_id: str, account_id: str, ledger_id: str, cc_id: str
     base = cash()
 
     creditor = api.add("creditors", {"name": f"مورد {TAG}"})
-    debt = api.add(
-        "debts",
+
+    # المقايسة تُدخل كبنود بكمية وسعر وحدة، والإجمالي يُحسب في القاعدة
+    debt_id = api.rpc(
+        "f_save_debt",
         {
-            "creditor_id": creditor["id"],
-            "description": f"مقايسة توريد {TAG}",
-            "total_amount": 1_000_000,
-            "debt_date": DATE,
-            "account_id": account_id,
-            "ledger_id": ledger_id,
-            "cost_center_id": cc_id,
+            "p_id": None,
+            "p_debt": {
+                "creditor_id": creditor["id"],
+                "description": f"مقايسة توريد {TAG}",
+                "debt_date": DATE,
+                "account_id": account_id,
+                "ledger_id": ledger_id,
+                "cost_center_id": cc_id,
+                "status": "open",
+            },
+            "p_items": [
+                {"name": "أسمنت", "unit": "طن", "quantity": 200, "unit_price": 2500},
+                {"name": "حديد", "unit": "طن", "quantity": 100, "unit_price": 5000},
+            ],
         },
+    )
+    debt = api.get(f"debts?id=eq.{debt_id}&select=*")[0]
+
+    check("الإجمالي محسوب من البنود", debt["total_amount"], 1_000_000)
+    items = api.get(f"debt_items?debt_id=eq.{debt_id}&select=*&order=sort_order")
+    check_eq("عدد البنود المحفوظة", len(items), 2)
+    check("إجمالي البند الأول = الكمية × السعر", items[0]["line_total"], 500_000)
+
+    # أي تعديل على بند يعيد حساب إجمالي المديونية في القاعدة نفسها
+    api.patch("debt_items", f"id=eq.{items[0]['id']}", {"quantity": 300})
+    check(
+        "تعديل كمية بند يحدّث الإجمالي",
+        api.get(f"debts?id=eq.{debt_id}&select=total_amount")[0]["total_amount"],
+        1_250_000,
+    )
+    api.patch("debt_items", f"id=eq.{items[0]['id']}", {"quantity": 200})
+    check(
+        "الإجمالي يعود بعودة الكمية",
+        api.get(f"debts?id=eq.{debt_id}&select=total_amount")[0]["total_amount"],
+        1_000_000,
     )
 
     after_debt = cash()

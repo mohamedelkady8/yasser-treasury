@@ -19,16 +19,21 @@ export async function saveDebt(
   if (!parsed.success)
     return { ok: false, error: parsed.error.issues[0].message };
 
+  const { items, ...debt } = parsed.data;
+
+  // دالة واحدة في القاعدة تحفظ المديونية وبنودها معًا وتحسب الإجمالي من البنود
   const supabase = await createClient();
-  const { error } = id
-    ? await supabase.from("debts").update(parsed.data).eq("id", id)
-    : await supabase.from("debts").insert(parsed.data);
+  const { error } = await supabase.rpc("f_save_debt", {
+    p_id: id,
+    p_debt: debt,
+    p_items: items,
+  });
 
   if (error)
     return {
       ok: false,
-      error: error.message.includes("total_amount")
-        ? "إجمالي المديونية يجب أن يكون أكبر من صفر"
+      error: error.message.startsWith("إجمالي")
+        ? error.message
         : "تعذّر حفظ المديونية",
     };
 

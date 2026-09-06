@@ -62,24 +62,46 @@ export const entrySchema = z
 export type EntryInput = z.input<typeof entrySchema>;
 export type EntryValues = z.output<typeof entrySchema>;
 
-export const debtSchema = z.object({
-  creditor_id: z.string().uuid("المورد مطلوب"),
-  description: z.string().trim().min(1, "وصف المديونية مطلوب").max(500),
-  total_amount: z.coerce.number().positive("إجمالي المديونية يجب أن يكون أكبر من صفر"),
-  debt_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "التاريخ غير صحيح"),
-  due_date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "تاريخ الاستحقاق غير صحيح")
-    .nullable()
-    .transform((v) => v || null),
-  account_id: id,
-  ledger_id: id,
-  cost_center_id: id,
-  status: z.enum(["open", "cancelled"]),
-  note: optText,
+/** بند واحد في مقايسة المورد: الكمية × سعر الوحدة = إجمالي البند */
+export const debtItemSchema = z.object({
+  name: z.string().trim().min(1, "اسم البند مطلوب").max(300),
+  unit: optText,
+  quantity: z.coerce.number().positive("الكمية يجب أن تكون أكبر من صفر"),
+  unit_price: z.coerce.number().min(0, "سعر الوحدة لا يصح أن يكون سالبًا"),
 });
 
+export type DebtItemInput = z.input<typeof debtItemSchema>;
+
+export const debtSchema = z
+  .object({
+    creditor_id: z.string().uuid("المورد مطلوب"),
+    description: z.string().trim().min(1, "وصف المديونية مطلوب").max(500),
+    debt_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "التاريخ غير صحيح"),
+    due_date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "تاريخ الاستحقاق غير صحيح")
+      .nullable()
+      .transform((v) => v || null),
+    account_id: id,
+    ledger_id: id,
+    cost_center_id: id,
+    status: z.enum(["open", "cancelled"]),
+    note: optText,
+    // الإجمالي لا يُكتب يدويًا: يُحسب من البنود هنا وفي القاعدة
+    items: z.array(debtItemSchema).min(1, "أضف بندًا واحدًا على الأقل"),
+  })
+  .superRefine((v, ctx) => {
+    const total = v.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+    if (total <= 0)
+      ctx.addIssue({
+        code: "custom",
+        message: "إجمالي البنود يجب أن يكون أكبر من صفر",
+        path: ["items"],
+      });
+  });
+
 export type DebtInput = z.input<typeof debtSchema>;
+export type DebtValues = z.output<typeof debtSchema>;
 
 export const nameSchema = z.object({
   name: z.string().trim().min(1, "الاسم مطلوب").max(200),

@@ -104,6 +104,18 @@ export type Debt = {
   created_by: string | null;
 };
 
+export type DebtItem = {
+  id: string;
+  debt_id: string;
+  name: string;
+  unit: string | null;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  sort_order: number;
+  created_at: string;
+};
+
 export type DebtView = Omit<Debt, "created_by" | "updated_at"> & {
   creditor_name: string;
   account_name: string | null;
@@ -311,6 +323,17 @@ export type Database = {
           total_amount: number;
         }
       >;
+      // line_total محسوب في القاعدة فلا يُكتب من التطبيق
+      debt_items: Table<
+        DebtItem,
+        Omit<Partial<DebtItem>, "debt_id" | "name" | "quantity" | "unit_price" | "line_total"> & {
+          debt_id: string;
+          name: string;
+          quantity: number;
+          unit_price: number;
+        },
+        Omit<Partial<DebtItem>, "line_total">
+      >;
       audit_log: Table<AuditLog>;
     };
     Views: {
@@ -331,6 +354,10 @@ export type Database = {
       f_revenue_by_type: { Args: TopArgs; Returns: Breakdown[] };
       f_daily_movement: { Args: RangeArgs; Returns: DailyMovement[] };
       f_monthly_summary: { Args: Record<string, never>; Returns: MonthlySummary[] };
+      f_save_debt: {
+        Args: { p_id: string | null; p_debt: Json; p_items: Json };
+        Returns: string;
+      };
     };
     Enums: {
       entry_kind: EntryKind;
