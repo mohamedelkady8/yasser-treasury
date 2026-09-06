@@ -67,7 +67,7 @@ export function CreditorsView({ creditors }: { creditors: CreditorBalance[] }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="rise space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           إجمالي المتبقي لكل الموردين:{" "}

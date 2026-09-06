@@ -61,7 +61,7 @@ export function CustodyView({
   const filtered = selected ? moves.filter((m) => m.cost_center_id === selected) : moves;
 
   return (
-    <div className="space-y-4">
+    <div className="rise space-y-4">
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => record("custody_out")}>
           <HandCoins className="size-4" />
@@ -217,7 +217,7 @@ export function CustodyView({
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow>
                   <TableHead className="w-28">رقم القيد</TableHead>
                   <TableHead className="w-24">التاريخ</TableHead>
                   <TableHead>البيان</TableHead>

@@ -102,7 +102,7 @@ export function DebtsView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="rise space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button onClick={() => setDebtForm({ open: true, debt: null })}>
           <Plus className="size-4" />

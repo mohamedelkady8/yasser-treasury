@@ -115,7 +115,7 @@ export function EntriesView({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="rise space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex rounded-lg bg-muted p-1">
           {[

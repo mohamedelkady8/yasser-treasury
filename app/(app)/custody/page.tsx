@@ -46,7 +46,7 @@ export default async function CustodyPage() {
         description="العهدة مال الشركة في يد موظف — تظهر ضمن النقدية حتى تُصفَّى"
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="rise-stagger mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="العهد القائمة"
           value={totals.balance}

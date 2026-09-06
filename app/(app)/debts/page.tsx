@@ -44,7 +44,7 @@ export default async function DebtsPage() {
         description="الالتزامات المتفق عليها مع الموردين، وكل دفعة قيد مصروف مربوط بها"
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="rise-stagger mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="إجمالي المتبقي للموردين"
           value={totalRemaining}

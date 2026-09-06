@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { AuroraBackground } from "@/components/aurora-background";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
@@ -28,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className={`${arabic.variable} antialiased`}>
+        <AuroraBackground />
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         <Toaster position="top-center" richColors closeButton />
       </body>

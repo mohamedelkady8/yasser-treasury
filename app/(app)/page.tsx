@@ -106,10 +106,10 @@ export default async function DashboardPage({
         <PeriodFilter />
       </PageHeader>
 
-      <div className="space-y-6">
+      <div className="rise-stagger space-y-6">
         <CashPositionCard cash={cash} usdRate={usdRate} />
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rise-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="الإيراد التشغيلي"
             value={totals.revenue}
@@ -203,7 +203,7 @@ export default async function DashboardPage({
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
+                  <TableRow>
                     <TableHead>البنك / الخزينة</TableHead>
                     <TableHead className="text-end">حركة الشهر</TableHead>
                     <TableHead className="text-end">الرصيد</TableHead>
@@ -260,7 +260,7 @@ export default async function DashboardPage({
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow>
                       <TableHead>العهدة</TableHead>
                       <TableHead className="text-end">صُرف</TableHead>
                       <TableHead className="text-end">أُنفق</TableHead>
@@ -348,18 +348,29 @@ function CashPositionCard({
   return (
     <Card
       className={cn(
-        "overflow-hidden border-0 bg-gradient-to-br p-0 text-white shadow-lg",
+        "relative overflow-hidden border-0 bg-gradient-to-br p-0 text-white shadow-xl",
         available >= 0
-          ? "from-primary to-primary/70 shadow-primary/20"
-          : "from-negative to-negative/70 shadow-negative/20"
+          ? "from-primary via-primary/85 to-chart-2/70 shadow-primary/25"
+          : "from-negative via-negative/85 to-warning/60 shadow-negative/25"
       )}
     >
-      <div className="grid gap-6 p-6 lg:grid-cols-5">
+      {/* هالتان تعطيان البطاقة عمقًا زجاجيًا */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-24 -start-16 size-72 rounded-full bg-white/20 blur-3xl animate-aurora"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-28 -end-10 size-72 rounded-full bg-white/10 blur-3xl animate-aurora"
+        style={{ animationDelay: "-13s" }}
+      />
+
+      <div className="relative grid gap-6 p-6 lg:grid-cols-5">
         <div className="lg:col-span-2">
           <p className="text-sm font-medium text-white/75">
             المتاح بعد سداد كل المديونيات
           </p>
-          <p className="mt-2 text-3xl font-bold sm:text-4xl">
+          <p className="mt-2 text-4xl font-bold tracking-tight drop-shadow-sm sm:text-5xl">
             <Money value={available} currency={false} />
             <span className="ms-2 text-base font-normal text-white/70">ج.م</span>
           </p>
@@ -374,7 +385,7 @@ function CashPositionCard({
           )}
         </div>
 
-        <div className="space-y-1.5 rounded-xl bg-white/10 p-4 backdrop-blur lg:col-span-3">
+        <div className="space-y-1.5 rounded-2xl border border-white/20 bg-white/10 p-4 shadow-inner backdrop-blur-md lg:col-span-3">
           {rows.map((r) => (
             <div
               key={r.label}
@@ -426,9 +437,16 @@ function TopCard({
   color: string;
 }) {
   return (
-    <Card>
+    <Card className="lift">
       <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span
+            aria-hidden
+            className="size-2.5 rounded-full ring-4 ring-current/10"
+            style={{ background: color }}
+          />
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {data.length ? <BreakdownChart data={data} color={color} /> : <Empty />}
@@ -445,7 +463,13 @@ function CustodyBadge({ state }: { state: CustodyBalance["state"] }) {
         ? "bg-destructive/10 text-destructive"
         : "bg-warning/15 text-warning";
   return (
-    <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium", tone)}>
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ring-1 ring-current/15",
+        tone
+      )}
+    >
+      <span aria-hidden className="size-1.5 rounded-full bg-current" />
       {CUSTODY_STATE_LABELS[state]}
     </span>
   );

@@ -98,7 +98,7 @@ export function BanksView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="rise space-y-6">
       <div className="flex justify-end">
         <Button onClick={() => setDraft(EMPTY)}>
           <Plus className="size-4" />

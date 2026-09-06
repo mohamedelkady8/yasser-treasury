@@ -49,6 +49,61 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ظلال الزجاج كـ utilities حتى تتعامل معها tailwind-merge بشكل صحيح */
+  --shadow-glass: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+  --shadow-glass-lg: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
+
+  --animate-aurora: aurora 26s ease-in-out infinite;
+  --animate-float: float 9s ease-in-out infinite;
+  --animate-sheen: sheen 3.2s ease-in-out infinite;
+  --animate-rise: rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-spin-slow: spin 14s linear infinite;
+
+  @keyframes aurora {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    33% {
+      transform: translate3d(6%, -5%, 0) scale(1.12);
+    }
+    66% {
+      transform: translate3d(-5%, 4%, 0) scale(0.94);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  @keyframes sheen {
+    0% {
+      opacity: 0;
+      transform: translateX(-120%);
+    }
+    45% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(120%);
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 :root {
@@ -87,6 +142,19 @@
   --sidebar-accent-foreground: oklch(0.97 0.01 240);
   --sidebar-border: oklch(0.34 0.03 250);
   --sidebar-ring: oklch(0.62 0.12 195);
+
+  /* الطبقة الزجاجية */
+  --glass-bg: oklch(1 0 0 / 68%);
+  --glass-bg-strong: oklch(1 0 0 / 85%);
+  --glass-border: oklch(1 0 0 / 70%);
+  --glass-highlight: oklch(1 0 0 / 90%);
+  --glass-shadow: 0 1px 2px oklch(0.21 0.03 250 / 6%),
+    0 8px 24px -12px oklch(0.21 0.03 250 / 18%);
+  --glass-shadow-lg: 0 1px 2px oklch(0.21 0.03 250 / 8%),
+    0 24px 48px -20px oklch(0.21 0.03 250 / 26%);
+  --aurora-1: oklch(0.72 0.14 195 / 42%);
+  --aurora-2: oklch(0.76 0.13 160 / 34%);
+  --aurora-3: oklch(0.7 0.13 285 / 26%);
 }
 
 .dark {
@@ -124,6 +192,16 @@
   --sidebar-accent-foreground: oklch(0.96 0.006 240);
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.68 0.12 195);
+
+  --glass-bg: oklch(0.28 0.03 250 / 55%);
+  --glass-bg-strong: oklch(0.26 0.03 250 / 78%);
+  --glass-border: oklch(1 0 0 / 12%);
+  --glass-highlight: oklch(1 0 0 / 14%);
+  --glass-shadow: 0 1px 2px oklch(0 0 0 / 30%), 0 8px 24px -12px oklch(0 0 0 / 55%);
+  --glass-shadow-lg: 0 1px 2px oklch(0 0 0 / 34%), 0 24px 48px -20px oklch(0 0 0 / 65%);
+  --aurora-1: oklch(0.6 0.15 195 / 34%);
+  --aurora-2: oklch(0.62 0.14 160 / 26%);
+  --aurora-3: oklch(0.58 0.16 285 / 26%);
 }
 
 @layer base {
@@ -158,7 +236,8 @@
     margin: 12mm;
   }
   aside,
-  header {
+  header,
+  [data-aurora] {
     display: none !important;
   }
   main {
@@ -167,7 +246,12 @@
   body {
     background: #fff;
   }
+  /* الزجاج لا يُطبع: نُسطّح كل شيء إلى أبيض بحدود رقيقة */
+  .glass,
+  .glass-strong,
   [data-slot="card"] {
+    background: #fff !important;
+    backdrop-filter: none !important;
     box-shadow: none !important;
     border: 1px solid #ddd !important;
     break-inside: avoid;
@@ -177,17 +261,119 @@
   }
 }
 
-/* شريط تمرير أنعم */
 @layer utilities {
+  /* شريط تمرير أنعم */
   .scroll-slim {
     scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent)
+      transparent;
   }
   .scroll-slim::-webkit-scrollbar {
     height: 8px;
     width: 8px;
   }
+  .scroll-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
   .scroll-slim::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background: color-mix(in oklab, var(--muted-foreground) 30%, transparent);
     border-radius: 9999px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+  }
+
+  /* السطح الزجاجي الأساسي: شفافية + ضباب + حد شعري + لمعة داخلية أعلى */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+  }
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(24px) saturate(170%);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
+  }
+
+  /* ارتفاع لطيف عند المرور */
+  .lift {
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.25s ease;
+  }
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--glass-shadow-lg), inset 0 1px 0 var(--glass-highlight);
+      border-color: color-mix(in oklab, var(--primary) 30%, var(--glass-border));
+    }
+  }
+
+  /* شريط ضوء يمرّ على الحافة العلوية */
+  .sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .sheen::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--primary) 70%, white),
+      transparent
+    );
+    animation: var(--animate-sheen);
+    pointer-events: none;
+  }
+
+  /* ظهور متدرّج لعناصر الصفحة */
+  .rise {
+    animation: var(--animate-rise);
+  }
+  .rise-stagger > * {
+    animation: var(--animate-rise);
+  }
+  .rise-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .rise-stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .rise-stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .rise-stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .rise-stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .rise-stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .rise-stagger > *:nth-child(7) { animation-delay: 360ms; }
+  .rise-stagger > *:nth-child(8) { animation-delay: 420ms; }
+
+  /* عنوان بتدرّج لوني */
+  .text-gradient {
+    background: linear-gradient(
+      100deg,
+      var(--foreground),
+      color-mix(in oklab, var(--primary) 75%, var(--foreground))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* احترام تفضيل تقليل الحركة */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .lift:hover {
+    transform: none;
   }
 }

@@ -64,7 +64,7 @@ export function ReviewView({
     );
 
   return (
-    <div className="space-y-6">
+    <div className="rise space-y-6">
       {grouped.length > 0 && (
         <Card>
           <CardHeader>
@@ -118,7 +118,7 @@ export function ReviewView({
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow>
                   <TableHead className="min-w-48">المديونية</TableHead>
                   <TableHead className="w-32 text-end">المتبقي</TableHead>
                   <TableHead className="w-24">الاستحقاق</TableHead>

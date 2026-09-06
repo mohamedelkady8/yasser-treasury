@@ -189,7 +189,7 @@ function SimpleList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="rise space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <SearchBox value={query} onChange={setQuery} />
         <Input

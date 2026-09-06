@@ -191,7 +191,7 @@ export default async function ReportsPage({
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
+                  <TableRow>
                     <TableHead>الشهر</TableHead>
                     <TableHead className="text-end">الإيراد</TableHead>
                     <TableHead className="text-end">المصروف</TableHead>
@@ -254,7 +254,7 @@ export default async function ReportsPage({
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
+                  <TableRow>
                     <TableHead>العهدة</TableHead>
                     <TableHead className="text-end">صُرف</TableHead>
                     <TableHead className="text-end">أُنفق</TableHead>
@@ -293,7 +293,7 @@ export default async function ReportsPage({
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow>
                   <TableHead>البنك / الخزينة</TableHead>
                   <TableHead className="text-end">الافتتاحي</TableHead>
                   <TableHead className="text-end">صافي الحركة</TableHead>
@@ -328,7 +328,7 @@ export default async function ReportsPage({
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/50">
+                  <TableRow>
                     <TableHead>المورد</TableHead>
                     <TableHead>المديونية</TableHead>
                     <TableHead className="text-end">الإجمالي</TableHead>
@@ -416,7 +416,7 @@ function BreakdownTable({
         ) : (
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
+              <TableRow>
                 <TableHead>البند</TableHead>
                 <TableHead className="w-16 text-center">القيود</TableHead>
                 <TableHead className="w-36 text-end">الإجمالي</TableHead>
