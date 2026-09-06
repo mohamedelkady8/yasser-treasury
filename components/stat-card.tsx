@@ -61,7 +61,7 @@ export function StatCard({
         {Icon && (
           <span
             className={cn(
-              "grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ring-1 ring-inset ring-white/40 transition-transform duration-300 group-hover:scale-105 dark:ring-white/10",
+              "grid size-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ring-1 ring-inset ring-current/15 transition-transform duration-300 group-hover:scale-105",
               t.chip
             )}
           >
