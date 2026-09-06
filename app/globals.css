@@ -259,6 +259,24 @@
   table {
     font-size: 10px;
   }
+  /* رأس الجدول يتكرر على كل صفحة ورقية */
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
+  }
+  tr,
+  [data-slot="card-header"] {
+    break-inside: avoid;
+  }
+  /* عنوان القسم لا يبقى وحده في ذيل الصفحة */
+  [data-slot="card-title"] {
+    break-after: avoid;
+  }
+  a[href]::after {
+    content: none !important;
+  }
 }
 
 @layer utilities {

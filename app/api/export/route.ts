@@ -8,12 +8,15 @@ import {
   MOVEMENT_LABELS,
   RECON_LABELS,
 } from "@/lib/format";
+import { fmtMonth } from "@/lib/format";
 import type {
   BankBalance,
+  Breakdown,
   CashPosition,
   CustodyBalance,
   DebtView,
   EntryView,
+  MonthlySummary,
   OperationalTotals,
 } from "@/lib/database.types";
 
@@ -45,6 +48,41 @@ function totalRow(ws: ExcelJS.Worksheet) {
   row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF4F5" } };
 }
 
+/** ورقة تفصيل بنود: البند، عدد القيود، الإجمالي، ونسبته من الإجمالي الكلي */
+function breakdownSheet(
+  wb: ExcelJS.Workbook,
+  name: string,
+  unit: string,
+  rows: Breakdown[],
+  total: number
+) {
+  const ws = sheet(wb, name);
+  header(ws, [
+    { header: unit, key: "name", width: 34 },
+    { header: "عدد القيود", key: "cnt", width: 12 },
+    { header: "الإجمالي", key: "total", width: 18, style: { numFmt: MONEY } },
+    { header: "النسبة", key: "pct", width: 10, style: { numFmt: "0.0%" } },
+  ]);
+  for (const r of rows)
+    ws.addRow({
+      name: r.name,
+      cnt: Number(r.cnt),
+      total: Number(r.total),
+      pct: total > 0 ? Number(r.total) / total : 0,
+    });
+  if (rows.length) {
+    const listed = rows.reduce((s, r) => s + Number(r.total), 0);
+    ws.addRow({
+      name: "الإجمالي",
+      cnt: rows.reduce((s, r) => s + Number(r.cnt), 0),
+      total: listed,
+      pct: total > 0 ? listed / total : 0,
+    });
+    totalRow(ws);
+  }
+  return ws;
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -64,16 +102,34 @@ export async function GET(request: NextRequest) {
   if (from) entriesQuery = entriesQuery.gte("entry_date", from);
   if (to) entriesQuery = entriesQuery.lte("entry_date", to);
 
-  const [entriesRes, banksRes, custodyRes, debtsRes, cashRes, totalsRes, settingsRes] =
-    await Promise.all([
-      entriesQuery.limit(20000),
-      supabase.from("v_bank_balances").select("*").order("sort_order"),
-      supabase.from("v_custody_balances").select("*").order("name"),
-      supabase.from("v_debt_balances").select("*").order("debt_date"),
-      supabase.from("v_cash_position").select("*").single(),
-      supabase.rpc("f_operational_totals", { p_from: from, p_to: to }),
-      supabase.from("settings").select("company_name").single(),
-    ]);
+  const range = { p_from: from, p_to: to };
+  const [
+    entriesRes,
+    banksRes,
+    custodyRes,
+    debtsRes,
+    cashRes,
+    totalsRes,
+    settingsRes,
+    monthlyRes,
+    byCcRes,
+    byLedgerRes,
+    byAccountRes,
+    revByTypeRes,
+  ] = await Promise.all([
+    entriesQuery.limit(20000),
+    supabase.from("v_bank_balances").select("*").order("sort_order"),
+    supabase.from("v_custody_balances").select("*").order("name"),
+    supabase.from("v_debt_balances").select("*").order("debt_date"),
+    supabase.from("v_cash_position").select("*").single(),
+    supabase.rpc("f_operational_totals", range),
+    supabase.from("settings").select("company_name").single(),
+    supabase.rpc("f_monthly_summary"),
+    supabase.rpc("f_expense_by_cost_center", { ...range, p_limit: 500 }),
+    supabase.rpc("f_expense_by_ledger", { ...range, p_limit: 500 }),
+    supabase.rpc("f_expense_by_account", { ...range, p_limit: 500 }),
+    supabase.rpc("f_revenue_by_type", { ...range, p_limit: 500 }),
+  ]);
 
   const entries = (entriesRes.data ?? []) as EntryView[];
   const banks = (banksRes.data ?? []) as BankBalance[];
@@ -83,6 +139,13 @@ export async function GET(request: NextRequest) {
   const totals = ((totalsRes.data as OperationalTotals[] | null)?.[0] ??
     {}) as OperationalTotals;
   const company = settingsRes.data?.company_name ?? "الشركة";
+  const monthly = (monthlyRes.data ?? []) as MonthlySummary[];
+  const byCc = (byCcRes.data ?? []) as Breakdown[];
+  const byLedger = (byLedgerRes.data ?? []) as Breakdown[];
+  const byAccount = (byAccountRes.data ?? []) as Breakdown[];
+  const revByType = (revByTypeRes.data ?? []) as Breakdown[];
+  const revenueTotal = Number(totals.revenue ?? 0);
+  const expenseTotal = Number(totals.expense ?? 0);
 
   const wb = new ExcelJS.Workbook();
   wb.creator = company;
@@ -139,6 +202,46 @@ export async function GET(request: NextRequest) {
     summary.addRow(row);
   totalRow(summary);
   summary.getRow(2).font = { bold: true };
+
+  // ---- الملخص الشهري
+  if (monthly.length) {
+    const ms = sheet(wb, "الملخص الشهري");
+    header(ms, [
+      { header: "الشهر", key: "month", width: 18 },
+      { header: "الإيراد", key: "revenue", width: 18, style: { numFmt: MONEY } },
+      { header: "المصروف", key: "expense", width: 18, style: { numFmt: MONEY } },
+      { header: "الصافي", key: "net", width: 18, style: { numFmt: MONEY } },
+      { header: "عدد القيود", key: "count", width: 12 },
+    ]);
+    for (const m of [...monthly].sort((a, b) => a.month.localeCompare(b.month)))
+      ms.addRow({
+        month: fmtMonth(m.month),
+        revenue: Number(m.revenue),
+        expense: Number(m.expense),
+        net: Number(m.net),
+        count: Number(m.entry_count),
+      });
+    ms.addRow({
+      month: "الإجمالي",
+      revenue: monthly.reduce((s, m) => s + Number(m.revenue), 0),
+      expense: monthly.reduce((s, m) => s + Number(m.expense), 0),
+      net: monthly.reduce((s, m) => s + Number(m.net), 0),
+      count: monthly.reduce((s, m) => s + Number(m.entry_count), 0),
+    });
+    totalRow(ms);
+  }
+
+  // ---- أوراق التحليل، بنفس ترتيب أقسام التقرير على الشاشة
+  breakdownSheet(wb, "الإيراد حسب النوع", "نوع الإيراد", revByType, revenueTotal);
+  breakdownSheet(
+    wb,
+    "المصروف حسب مركز التكلفة",
+    "مركز التكلفة",
+    byCc,
+    expenseTotal
+  );
+  breakdownSheet(wb, "المصروف حسب الأستاذ", "حساب الأستاذ", byLedger, expenseTotal);
+  breakdownSheet(wb, "المصروف حسب الحساب", "اسم الحساب", byAccount, expenseTotal);
 
   // ---- القيود
   const ws = sheet(wb, "القيود");
