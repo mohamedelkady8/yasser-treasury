@@ -1,8 +1,11 @@
 import Link from "next/link";
 import {
+  ArrowDownRight,
   ArrowLeftRight,
+  ArrowUpRight,
   Banknote,
   HandCoins,
+  Landmark,
   ShieldAlert,
   TrendingDown,
   TrendingUp,
@@ -109,6 +112,8 @@ export default async function DashboardPage({
       <div className="rise-stagger space-y-6">
         <CashPositionCard cash={cash} usdRate={usdRate} />
 
+        <BankTiles banks={banks} total={Number(cash.bank_total ?? 0)} />
+
         <div className="rise-stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="الإيراد التشغيلي"
@@ -192,110 +197,56 @@ export default async function DashboardPage({
           </Card>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Banknote className="size-4 text-muted-foreground" />
-                أرصدة البنوك والخزائن
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HandCoins className="size-4 text-muted-foreground" />
+              العهد
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {custody.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                لا توجد مراكز عهد — أضف مركز تكلفة يبدأ اسمه بكلمة «عهد»
+              </p>
+            ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>البنك / الخزينة</TableHead>
-                    <TableHead className="text-end">حركة الشهر</TableHead>
+                    <TableHead>العهدة</TableHead>
+                    <TableHead className="text-end">صُرف</TableHead>
+                    <TableHead className="text-end">أُنفق</TableHead>
                     <TableHead className="text-end">الرصيد</TableHead>
+                    <TableHead>الحالة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {banks.map((b) => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-medium">
-                        {b.name}
-                        {b.is_usd && (
-                          <Badge variant="secondary" className="ms-2 text-[10px]">
-                            دولار
-                          </Badge>
-                        )}
+                  {custody.map((c) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="text-end">
+                        <Money value={c.paid_out} currency={false} />
                       </TableCell>
                       <TableCell className="text-end">
-                        <Money value={b.net_movement} currency={false} sign />
+                        <Money value={c.spent} currency={false} />
                       </TableCell>
                       <TableCell className="text-end">
                         <Money
-                          value={b.balance}
+                          value={c.balance}
                           currency={false}
-                          sign
                           className="font-semibold"
                         />
                       </TableCell>
+                      <TableCell>
+                        <CustodyBadge state={c.state} />
+                      </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-semibold">
-                    <TableCell>الإجمالي</TableCell>
-                    <TableCell></TableCell>
-                    <TableCell className="text-end">
-                      <Money value={cash.bank_total} currency={false} sign />
-                    </TableCell>
-                  </TableRow>
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HandCoins className="size-4 text-muted-foreground" />
-                العهد
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {custody.length === 0 ? (
-                <p className="p-6 text-center text-sm text-muted-foreground">
-                  لا توجد مراكز عهد — أضف مركز تكلفة يبدأ اسمه بكلمة «عهد»
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>العهدة</TableHead>
-                      <TableHead className="text-end">صُرف</TableHead>
-                      <TableHead className="text-end">أُنفق</TableHead>
-                      <TableHead className="text-end">الرصيد</TableHead>
-                      <TableHead>الحالة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {custody.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium">{c.name}</TableCell>
-                        <TableCell className="text-end">
-                          <Money value={c.paid_out} currency={false} />
-                        </TableCell>
-                        <TableCell className="text-end">
-                          <Money value={c.spent} currency={false} />
-                        </TableCell>
-                        <TableCell className="text-end">
-                          <Money
-                            value={c.balance}
-                            currency={false}
-                            className="font-semibold"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <CustodyBadge state={c.state} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid gap-4 lg:grid-cols-3">
           <TopCard title="أعلى 10 مراكز تكلفة" data={byCostCenter} color="var(--chart-1)" />
@@ -422,6 +373,147 @@ function CashPositionCard({
             </p>
           )}
         </div>
+      </div>
+    </Card>
+  );
+}
+
+/** الخزائن تُميَّز بالاسم كما تُميَّز مراكز العهد، فلا عمود لها في القاعدة */
+const isTreasury = (name: string) => /^(خزينة|خزنة|خزنه)/.test(name.trim());
+
+/** مربع لكل بنك وخزينة: الرصيد أبرز رقم، وشريط يوضّح وزنه من الإجمالي */
+function BankTiles({ banks, total }: { banks: BankBalance[]; total: number }) {
+  if (banks.length === 0) return null;
+
+  const ordered = [...banks].sort(
+    (a, b) => Math.abs(Number(b.balance)) - Math.abs(Number(a.balance))
+  );
+  const largest = Math.max(...ordered.map((b) => Math.abs(Number(b.balance))), 1);
+  const treasuries = banks.filter((b) => isTreasury(b.name)).length;
+
+  return (
+    <section>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <Banknote className="size-[18px] text-muted-foreground" />
+            أرصدة البنوك والخزائن
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            البنوك {num(banks.length - treasuries)} · الخزائن {num(treasuries)}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-end">
+            <p className="text-[11px] text-muted-foreground">الإجمالي</p>
+            <p className="text-xl font-bold tracking-tight">
+              <Money value={total} currency={false} sign />
+              <span className="ms-1 text-xs font-normal text-muted-foreground">
+                ج.م
+              </span>
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/banks">إدارة الحسابات</Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="rise-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+        {ordered.map((bank) => (
+          <BankTile key={bank.id} bank={bank} largest={largest} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function BankTile({ bank, largest }: { bank: BankBalance; largest: number }) {
+  const balance = Number(bank.balance ?? 0);
+  const movement = Number(bank.net_movement ?? 0);
+  const treasury = isTreasury(bank.name);
+  const Icon = treasury ? Wallet : Landmark;
+  const idle = Math.abs(balance) < 0.005;
+
+  return (
+    <Card
+      className={cn(
+        "lift relative gap-0 overflow-hidden p-4",
+        idle && "border-dashed opacity-70"
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-x-0 top-0 h-1",
+          balance < 0
+            ? "bg-negative"
+            : treasury
+              ? "bg-chart-2"
+              : "bg-primary"
+        )}
+      />
+
+      <div className="flex items-start justify-between gap-2">
+        <span
+          className={cn(
+            "grid size-9 shrink-0 place-items-center rounded-xl ring-1 ring-current/10",
+            treasury ? "bg-chart-2/10 text-chart-2" : "bg-primary/10 text-primary"
+          )}
+        >
+          <Icon className="size-[18px]" />
+        </span>
+        {bank.is_usd && (
+          <Badge variant="secondary" className="text-[10px]">
+            دولار
+          </Badge>
+        )}
+      </div>
+
+      <p
+        title={bank.name}
+        className="mt-3 line-clamp-2 min-h-8 text-sm font-medium leading-tight"
+      >
+        {bank.name}
+      </p>
+
+      <p className="mt-1 text-xl font-bold tracking-tight">
+        <Money
+          value={balance}
+          currency={false}
+          className={cn(balance < 0 && "text-negative")}
+        />
+      </p>
+
+      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+        <span
+          className={cn(
+            "block h-full rounded-full",
+            treasury ? "bg-chart-2/70" : "bg-primary/70"
+          )}
+          style={{ width: `${(Math.abs(balance) / largest) * 100}%` }}
+        />
+      </div>
+
+      <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+        <span>{num(bank.entry_count)} قيد</span>
+        {idle ? (
+          <span>بلا حركة</span>
+        ) : (
+          <span
+            className={cn(
+              "num inline-flex items-center gap-0.5 font-medium",
+              movement >= 0 ? "text-positive" : "text-negative"
+            )}
+          >
+            {movement >= 0 ? (
+              <ArrowUpRight className="size-3" />
+            ) : (
+              <ArrowDownRight className="size-3" />
+            )}
+            {egp(Math.abs(movement))}
+          </span>
+        )}
       </div>
     </Card>
   );
